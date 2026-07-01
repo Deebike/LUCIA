@@ -95,6 +95,3 @@ See the report for references and acknowledgements.
 Programme: CAS Advanced Machine Learning, University of Bern, (2025–2026)
 Focus: computer vision, image-based regression, defect analysis, generative modelling.
 Libraries: PyTorch, NumPy, pandas, scikit-learn, scikit-image, SciPy, matplotlib.
-# LUCIA
-# LUCIA
-# LUCIA
