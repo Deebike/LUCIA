@@ -1,5 +1,7 @@
 # LUCIA, CAS AML Final Project
 
+![LUCIA](figures/LUCIA_ALEBRIJE_transparent_small.png)
+
 **Luminescence Understanding, Classification, Impact, and Attribution**
 University of Bern, CAS Advanced Machine Learning (2025–2026)
 
