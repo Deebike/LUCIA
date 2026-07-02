@@ -3,7 +3,7 @@
 ## Edge Detection and Registration
 ---
 
-This document describes the procedure for locating the cell edge, fitting the cell polygon, and transforming each cell into a canonical frame with a fixed mask and tiling. The method was developed in a preparatory notebook (NB00b, "Cell Edge Detection & Registration", v20) and later turned in to the py-script `lucia_registration_v4` inside the image pipeline (NB1b). Quality-gate validation is in NB1-QC.
+This document describes the procedure for locating the cell edge, fitting the cell polygon, and transforming each cell into a canonical frame with a fixed mask and tiling. The method was developed in a preparatory notebook (NB00b, "Cell Edge Detection & Registration", v20) and later turned into the Python module `lucia_registration_v4` used inside the image pipeline (NB1b). Quality-gate validation is in NB1-QC. This document is the detailed companion to §3 (Feature engineering) of the LUCIA report; the data-quality outcome of the chain (cohort cascade, rejection accounting, and registration QC) is reported in report §2.3.
 
 ## §ED.1 Objective
 
@@ -85,7 +85,7 @@ Cells failing any check are flagged `geom_keep = False` and excluded from modell
 
 ## §ED.7 Rigid registration into the canonical frame (NB1b / `lucia_registration_v4`)
 
-NB1b re-implements the NB00b edge detection as a robust **Gauss-Newton point-to-edge fit** (`lucia_registration_v4`). For each cell it estimates a rigid pose: a rotation angle θ and a translation vector t = (t_x, t_y) that maps the detected outline onto the fixed nominal outline.
+NB1b re-implements the NB00b edge detection as a robust **Gauss-Newton point-to-edge fit** (`lucia_registration_v4`). For each cell it estimates a rigid pose: a rotation angle θ and a translation vector t = (t_x, t_y) that maps the detected outline onto a single fixed reference outline. That reference outline, the **master polygon**, is the canonical cell outline built once from the detected edges of the large majority of cells (report §3.3); every cell is fitted to it, so tile (i, j) addresses the same physical region in every cell after registration.
 
 **Area-preserving property.** Because the pose is rotation + translation only (no scale, no shear), the transform is an isometry and is inherently area-preserving. The measured area stays in the band 13,640 to 13,780 mm² (median 13,705 mm²), confirming no scaling.
 
@@ -100,7 +100,7 @@ NB1b re-implements the NB00b edge detection as a robust **Gauss-Newton point-to-
 
 ## §ED.8 Registration quality (NB1-QC Check 3)
 
-On the kept cells (`geom_keep = True`) the fit quality is:
+In the cohort accounting (report §2.3), the geometry gate rejects only 63 of 11,203 cells (0.6 %); combined with the IV cleaning (§2.2) and missing-image exclusions this leaves the unpaired modelling cohort of 10,427 cells used in report §5 and §6. On the kept cells (`geom_keep = True`) the fit quality is:
 
 | Metric | Value |
 |---|---|
@@ -116,7 +116,9 @@ The physics correlations validate that registration and channels are consistent:
 
 The canonical 558 × 1108 frame is tiled on a fixed `edge_anchored_tile_grid` of **9 rows × 18 columns = 162 tiles** of approximately 64 × 64 px, with a small geometric overlap derived from the frame size (≈ 2 px vertically, ≈ 2.6 px horizontally). Each tile is intersected with the per-cell canonical mask; tiles whose mask is empty (corners beyond the chamfer, off-cell border) are excluded by the active-fraction rule rather than zero-padded, so per-tile statistics are computed only over real cell pixels.
 
-For each tile and each of the 7 channels (4 raw + 3 synthesised), five statistics are computed (mean, std, uniformity/CV, entropy, skew), plus two fixed columns (is_border, active_frac), giving **37 features per tile**. The full tile dataset is stored in `lucia_tile_features.parquet` (≈ 1.70 M rows, 162 tiles × ≈ 10,500 cells minus masked-out tiles).
+The overlap is uniform and derived geometrically from the canonical size rather than passed as an argument: along the 9-tile axis, 9 × 64 = 576 px cover the active 558 px, i.e. 18 px of total overlap spread over 8 inter-tile seams (≈ 2 px per seam); along the 18-tile axis, 18 × 64 = 1152 px cover 1108 px, i.e. 44 px over 17 seams (≈ 2.6 px per seam). This replaced an earlier non-overlapping grid that accumulated all the leftover pixels into the last two tiles.
+
+For each tile the feature vector has **37 entries**: two geometry/quality flags (`is_border`, `active_frac`) plus, for each of the 7 channels (the 4 raw channels EL_lo, EL_hi, PL_hi, PL_lo and the 3 synthesised channels Rs_map, log(EL_hi/PL_hi), grad(EL_hi)), five statistics (mean, std, uniformity = std/mean, entropy, skew), so 7 × 5 + 2 = 37. Each cell is therefore a fixed, ordered array of shape (162 tiles × 37 features), which is the input to the Tier-A tile-attention model (report §5.1). The full tile dataset is stored in `lucia_tile_features.parquet` (≈ 1.70 M rows, 162 tiles × ≈ 10,500 cells minus masked-out tiles), and NB1-QC confirms zero NaNs across the feature columns.
 
 ## §ED.10 Reduction summary
 
