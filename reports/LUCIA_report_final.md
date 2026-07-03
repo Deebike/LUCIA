@@ -1,23 +1,19 @@
 
 
+
 Derk Leander Bätzner
-Nomannenweg 2
+Normannenweg 2
 CH - 3232 Ins
 [dbaetzner@proton.me](mailto:dbaetzner@proton.me)
 
 
-# LUCIA
 
-## Luminescence
-## Understanding
-## Classification
-## Impact
-## Attribution
+# LUCIA
+## Luminescence Understanding, Classification, Impact & Attribution
 
 ![LUCI_logo_L](../figures/LUCIA_ALEBRIJE_cropped.png)
 
-
-### Predicting solar cell performance and attributing electrical loss in rear-contact silicon solar cells from EL & PL images
+### Predicting solar cell performance and attributing electrical loss in rear-contact silicon solar cells from EL/PL images
 
 ---
 30 June 2026
@@ -49,7 +45,9 @@ The cells studied are **rear-contact** which means all electrical contacts are o
 **Project idea and objective.** The envisioned output of LUCIA is a per-cell **report card**.
 LUCIA is posed as three coupled tasks on the same representation:
 
-(i) **supervised multi-output regression** of seven IV parameters from image-derived per-tile features, with predictive uncertainty; (ii) **unsupervised localisation** of non-uniform regions, the cell **defect maps**; (iii) **quantification of the electrical performance loss** associated with the observed image structures.
+(i) **supervised multi-output regression** of seven IV parameters from image-derived per-tile features, with predictive uncertainty;
+(ii) **unsupervised localisation** of non-uniform regions, the cell **defect maps**;
+(iii) **quantification of the electrical performance loss** associated with the observed image structures.
 
 The three unifying questions are all **forward**, from real or synthesised cell images to predicted IV parameters:
 
@@ -61,7 +59,9 @@ A measured IV parameter is a single global, spatially aggregated quantity, so in
 
 **The projects contributions:**
 
-(1) A **register-then-tile** representation that makes spatial position comparable across the cohort (a single canonical frame; §3), with an attention model predicting seven IV parameters with calibrated uncertainty and an **abstention** response. (2) An **appearance-based localisation** of structural non-uniformity (occlusion + reconstruction-residual defect maps), *where* the structure is, observed, making no inverse-attribution claim. (3) A per-cell **report card** unifying prediction, localisation, and the whole-cell electrical performance loss (the forward scenarios above).
+(1) A **register-then-tile** representation that makes spatial position comparable across the cohort (a single canonical frame; §3), with an attention model predicting seven IV parameters with calibrated uncertainty and an **abstention** response.
+(2) An **appearance-based localisation** of structural non-uniformity (occlusion + reconstruction-residual defect maps), *where* the structure is, observed, making no inverse-attribution claim.
+(3) A per-cell **report card** unifying prediction, localisation, and the whole-cell electrical performance loss (the forward scenarios above).
 
 ---
 
@@ -321,6 +321,21 @@ flowchart TD
     IV -. supervises .-> A
 ```
 
+**Table 5.1.** Model inventory: every model trained or evaluated in the project, its role, and its status. The table is the map of the modelling story; the subsections give the detail.
+
+| Model | NB | Role | Input | Headline result | Status |
+|---|---|---|---|---|---|
+| HistGB / RF / MLP baselines | NB2 | tabular IV reference (7 direct heads) | cell-level aggregate features | e.g. Pmax R² 0.842 (HistGB) | reference |
+| MLP-VAE | NB2 | latent representation of cell features | cell-feature vector | posterior collapse (silhouette −0.135) | dropped |
+| ConvAE, Track A (β = 0) | NB2 | denoising reconstruction → defect maps | `el_hi`,`pl_hi` 288 × 576 | val recon 0.0239, pixel-ρ 0.982 | in use (NB4) |
+| ConvVAE, Track B (small β) | NB2 | probabilistic latent for generation | `el_hi`,`pl_hi` 288 × 576 | val recon 0.0281, posterior not collapsed | in use (NB5) |
+| **TileSetIV (Tier-A)** | NB3 | IV prediction, μ ± σ, abstention | 162 × 37 tile features | FF R² 0.886; Pmax R² 0.908 (confident set) | **model of record** |
+| Defect classifier | NB4 | reproduce taxonomy labels | per-tile defect features | 97.6 % vs bootstrap labels | bootstrap check |
+| SpatialBottleneck | NB5 | compress ConvVAE map for diffusion | 512 × H5 × W5 map | val MSE 0.0078 | in use |
+| FiLM U-Net DDPM | NB5 | IV-conditioned generation / editing | spatial latent + 7 IV | generative headroom ΔFF +0.096 / ΔPmax +0.48 W; masked edits ΔIV ≈ 0 | headroom usable; S2/S3 negative |
+| DirectDecoder | NB5 | faithful latent → image decode | spatial latent | val L1 0.013 | in use (S2/S3 evaluation) |
+| ViT/MAE (Tier-C) | NB6 | cross-tile attention for Rs | 162 tile tokens | best balanced run: FF 0.14 / Pmax 0.17 / Rs 0.10 | negative, not pursued |
+
 ### 5.0 · Notebook map
 
 NB1a (IV cleaning) runs on a local Linux machine; NB1b, NB1c, NB1-QC and NB2 through NB7 all run on the UBELIX HPC cluster (H100). A standalone edge-detection notebook (NB00b) was **auxiliary development, not part of the project pipeline**, it prototyped the edge logic (§3.2) that enabled the production registration in NB1b.
@@ -363,7 +378,7 @@ Training is MSE warm-up on μ (calibrating means before σ fires) **then** β-NL
  ![](../figures/nb3_optuna_history.png)
  
  
- ![](../figures/nb3_optuna_importances.png)
+ ![693](../figures/nb3_optuna_importances.png)
  
  
  *Figure 5.1. OPTUNA optimisation history and hyper-parameter importance for the Tier-A study (`nb3_optuna_history.png`).*
@@ -373,7 +388,7 @@ Training is MSE warm-up on μ (calibrating means before σ fires) **then** β-NL
 *Figure 5.2. ConvVAE / ConvAE architecture: a five-stage stride-2 encoder to a 512 × 9 × 18 map, a 64-dimensional latent, and a symmetric transposed-convolution decoder. Track A is deterministic (denoising), Track B adds a probabilistic latent (`convvae_architecture.svg`).*
 
 **Performance (test split, n = 1564, 37-feature checkpoint).** Per-target R²/ρ and the
-baseline comparison are in §6.1. TileSet-A ρ is higher than each baseline's ρ on all seven targets; on R² it is higher than the baselines on Vmax, FF and Pmax (confident set) and lower on Voc, Imax and Rs. The acceptance gate is read on the abstention confident set, where it is met (§6.2).
+baseline comparison are in §6.1. TileSet-A ρ is higher than each baseline's ρ on all seven targets; on R² it is higher than the baselines on Vmax, FF, Pmax, Imax and Isc, and lower on Voc and Rs (§6.1, Table 6.1). The acceptance gate is read on the abstention confident set, where it is met (§6.2).
 
 ![697](../figures/nb3_training_curve.png)
 
@@ -403,7 +418,7 @@ reconstruction (validation recon 0.0239; recon MSE 0.0144; pixel-ρ 0.982) and s
 - **Track B (ConvVAE, small β)** adds a probabilistic latent. It reaches validation recon 0.0281,
 about 17 % reconstruction overhead relative to Track A, in exchange for a smooth, sampleable latent. Its posterior does not collapse (per-cell μ std ≈ 42.2, so the latent carries cell-specific variation), which is the property the NB5 diffusion prior relies on (§5.5).
 
-Both encoders map the two channels (`el_hi`, `pl_hi`) from 288 × 576 to a 512 × 9 × 18 feature map through five stride-2 convolution blocks, flatten to a 64-dimensional latent (for Track B, a mean and a log-variance), and decode symmetrically with transposed convolutions back to 288 × 576. The architecture schematic is Figure 5.1 (`convvae_architecture.svg`); the full layer specification is in Appendix A.
+Both encoders map the two channels (`el_hi`, `pl_hi`) from 288 × 576 to a 512 × 9 × 18 feature map through five stride-2 convolution blocks, flatten to a 64-dimensional latent (for Track B, a mean and a log-variance), and decode symmetrically with transposed convolutions back to 288 × 576. The architecture schematic is Figure 5.2 (`convvae_architecture.svg`); the full layer specification is in Appendix A.
 
 **Defect maps and quality gate (NB4).** NB4 encodes the whole cohort through the **Track-A
 denoising ConvAE** (`el_hi`, `pl_hi`) and forms the directional residual `clip((recon−orig)/max(recon,ε), 0, 1)`, a **fractional signal loss** in [0, 1], comparable across cells and brightness levels (luminescence defects are always *darker* than the healthy reconstruction, so `recon − orig > 0`). The residual is pooled to a per-tile grid
@@ -411,7 +426,7 @@ denoising ConvAE** (`el_hi`, `pl_hi`) and forms the directional residual `clip((
 
 ![](../figures/nb4_latent_gate.png)
 
-*Figure 5.5. Latent-MSE auto-reject gate (NB4): the distribution of per-cell latent reconstruction error, with the p99 threshold that flags off-manifold cells whose defect maps are unreliable.*
+*Figure 5.4. Latent-MSE auto-reject gate (NB4): the distribution of per-cell latent reconstruction error, with the p99 threshold that flags off-manifold cells whose defect maps are unreliable (`nb4_latent_gate.png`).*
 
 A **latent-MSE auto-reject gate** flags cells whose reconstruction error exceeds the 99th
 percentile (`recon_mse > 0.566`) as probable registration failures, **flagged for review, not silently dropped**.
@@ -428,7 +443,13 @@ standardised, *clustered on the defect map, not on raw latents, which removes th
 | edge_shunt | 115 | 0.783 | 2.15 | 0.642 |
 | contamination | 96 | 0.803 | 1.78 | 0.613 |
 
-A small classifier reproduces the cluster labels at 97.6 % test accuracy; the labels are bootstrap labels, to be confirmed against a hand-labelled set (§7). Figure 5.4 shows the defect-map gallery together with the cluster gallery, with the five nearest cells per class (`nb4_cluster_gallery.png`).
+A small classifier reproduces the cluster labels at 97.6 % test accuracy. Figure 5.5 shows the defect-map gallery together with the cluster gallery, with the five nearest cells per class (`nb4_cluster_gallery.png`).
+
+The taxonomy should be read for what it is: an **unsupervised clustering of appearance features**, whose class names are bootstrap labels assigned by inspection, not a validated physical defect ontology. Because the clusters are formed on the defect maps and then checked against the electrical parameters, the monotone severity ordering above is a consistency result, not a claim that each class corresponds to a distinct physical defect mechanism. Promoting the taxonomy to a physically meaningful classification requires hand-labelling a subset of cells and re-training the classifier against those labels (§7).
+
+![](../figures/nb4_defect_umap.png)
+
+*Figure 5.6. Two-dimensional UMAP projection of the 324-dimensional per-tile defect features, coloured left by k-means class and right by normalized Pmax. The projection makes the cluster structure and its alignment with performance visible; it is representation evidence, not a physical classification (`nb4_defect_umap.png`; to generate in NB4: UMAP of the standardised defect features, two panels coloured by class and by Pmax/max).*
 
 ### 5.3 · Electrical performance loss, forward estimation
 
@@ -464,9 +485,7 @@ flowchart TD
  
 The S1 counterfactual measures each cell's headroom against an ideal reference. The reference used here is the population top-decile centroid (the mean over the 730 cells with Pmax ≥ 3.32 W), which represents the best-performing cells actually present in the cohort. The choice of reference is a deliberate degree of freedom rather than a fixed constant: it can be raised as the cell technology improves, by tracking a moving cohort top-decile, or it can be set to any chosen target cell to run simulation scenarios of the form "how much headroom would remain if the ideal were this cell, or that one". The S1 machinery is unchanged by the choice; only the reference vector changes.
 
-![](../figures/nb4_counterfactual_headroom_nb3.png)
-
-*Figure 5.6. S1 counterfactual headroom: per-cell FF and Pmax headroom against the top-decile reference (`nb4_counterfactual_headroom_nb3.png`). The occlusion-sensitivity heatmap is shown once, in §6.3.*
+The S1 headroom distributions and the occlusion-sensitivity heatmap are results and are shown once, in §6.3 (Figures 6.3 and 6.4).
 
 ### 5.4 · Tier-C, ViT/MAE (cross-tile attention)
 
@@ -516,17 +535,21 @@ autoencoder) reconstructs the latent accurately (validation MSE 0.0078), and lat
 
 **Models, losses, and how the diffusion is conditioned.** The generator has two stages, both trained on UBELIX (run `20260629_214259`). Stage 1 is a small variational autoencoder, the *SpatialBottleneck*, that compresses the frozen ConvVAE feature map (512 × H5 × W5) to a much thinner `C_LAT × H5 × W5` latent through 1 × 1 convolutions that output a mean and a log-variance per location. This gives a compact, smooth latent in which nearby points decode to similar-looking cells, which is the property a diffusion model needs. It is trained with reconstruction error plus a small Kullback–Leibler term (`MSE(recon) + β·KL`, β = 0.01; Adam, lr 1e-3, 30 epochs). Stage 2 is a *denoising diffusion probabilistic model* (DDPM): it learns to reverse a gradual noising process, so that starting from pure noise and denoising step by step produces a realistic latent, which the decoder turns into a cell image. The denoiser is a U-Net (an encoder–decoder with skip connections that preserve fine spatial detail). Its output is steered by the seven target IV values through *FiLM* (Feature-wise Linear Modulation): the IV vector is mapped to a per-channel scale and shift that is applied inside the network, so the same denoiser generates a cell consistent with whatever IV is requested. To make that steering adjustable at sampling time, conditioning is randomly dropped for 10 % of training examples (classifier-free guidance); at sampling, a guidance weight `cfg = 2.0` sets how strongly the requested IV is enforced. Training uses a cosine noise schedule over T = 1000 steps (AdamW, lr 3e-4, cosine learning-rate decay, mixed precision, 500 epochs); sampling uses the faster DDIM sampler with 50 steps. The overall loop is: compress to the latent, learn IV-conditioned denoising, then sample or edit a latent (remove or add structure by masked inpainting) and decode it back to an image, which is re-predicted through Tier-A for the whole-cell ΔIV.
 
+![697](../figures/film_ddpm_architecture.svg)
+
+*Figure 5.7. The IV-conditioned diffusion stage in detail: the forward noising and learned reverse denoising over the Stage-1 latent, the U-Net denoiser, and the FiLM conditioning path, in which the seven requested IV values are mapped to per-channel scale and shift parameters (γ, β) applied inside each U-Net block (`film_ddpm_architecture.svg`).*
+
 ![](../figures/nb2_convae_loss.png)
 
-*Figure 5.7. ConvAE / ConvVAE training curves (Track A and Track B), training and validation reconstruction versus epoch (`nb2_convae_loss.png`).*
+*Figure 5.8. ConvAE / ConvVAE training curves (Track A and Track B), training and validation reconstruction versus epoch (`nb2_convae_loss.png`).*
 
 ![](../figures/nb5_bottleneck_recon_20260630_103347.png)
 
-*Figure 5.8. Stage-1 SpatialBottleneck reconstruction (validation MSE 0.0078): original versus round-trip decode (`nb5_bottleneck_recon.png`).*
+*Figure 5.9. Stage-1 SpatialBottleneck reconstruction (validation MSE 0.0078): original versus round-trip decode (`nb5_bottleneck_recon.png`).*
 
 ![](../figures/nb5_cfg_sanity_20260630_103347.png)
 
-*Figure 5.9. Stage-2 conditioning sanity: samples at guidance cfg = 0 versus cfg = 2, showing that the requested IV visibly steers the generated cell (`nb5_cfg_sanity.png`).*
+*Figure 5.10. Stage-2 conditioning sanity: samples at guidance cfg = 0 versus cfg = 2, showing that the requested IV visibly steers the generated cell (`nb5_cfg_sanity.png`).*
 
 > **Redaction note:** Figures 5.8 and 5.9 currently show un-stamped raw EL/PL reconstructions; before release they must be passed through the raw-channel stamp (§2 figure policy), since they display the four raw channels.
 
@@ -553,7 +576,7 @@ TileSet-A Spearman ρ is ≥ 0.95 for six of seven targets (Isc 0.851) on the fu
 **Acceptance gate.** Gate = FF R² ≥ 0.85 and Pmax R² ≥ 0.87. On the full set FF = 0.886 (≥ 0.85)
 and Pmax = 0.778 (< 0.87) → the gate is not met on the full set; the Pmax shortfall is located in the degraded floor cluster (true `Pmax < 2.25 W`, 107 of 1564 cells, where full-set Pmax R² = 0.778 vs 0.867 on the main population). Under the abstention rule (μ_pred(Pmax) < 0.8 W, §6.2) Pmax R² = **0.908** at **96.6 % coverage**, so the gate is met on the confident set (FF 0.866, Pmax 0.908). This run differs from the preceding one (e.g. full-set Pmax 0.778 vs 0.854); the model is trained from scratch per run and exhibits run-to-run variation, so the checkpoint id is recorded with every number.
 
-**Baseline comparison.** The NB2 baselines (HistGB, MLP, RF) use the seven direct heads and the cell-level feature representation (`lucia_cell_features.parquet`: per-channel non-uniformity, geometry, 4-channel tile-PCA). On R² the baselines match or exceed TileSet-A on Voc, Imax and Rs, and TileSet-A is higher on Vmax, FF and Pmax (confident set). A grouped permutation-importance check on the HistGB Pmax baseline ranks the per-channel non-uniformity highest (`nu_cv`importance +5.47, `nu_p95p5` +3.81, above the geometry and PCA groups). TileSet-A additionally produces per-cell uncertainty (heteroscedastic σ), the abstention response (§6.2), a spatial attention map (§6.5), and the per-tile pathway used by the NB4 occlusion and forward scenarios; the baselines produce point estimates only. The two are read together: the baselines give an R² reference on a position-agnostic feature set, and TileSet-A adds uncertainty, abstention, and spatial structure.
+**Baseline comparison.** The NB2 baselines (HistGB, MLP, RF) use the seven direct heads and the cell-level feature representation (`lucia_cell_features.parquet`: per-channel non-uniformity, geometry, 4-channel tile-PCA). On R² the baselines exceed TileSet-A on Voc and (narrowly) on Rs, and TileSet-A is higher on Vmax, FF, Pmax, Imax and Isc. The pattern is plausible in representational terms: a target whose signal is carried largely by whole-cell aggregate statistics is captured directly by the position-agnostic cell-level features, while the tile-attention model's advantage concentrates on the spatially structured targets and on rank quality, where it leads on all seven. A grouped permutation-importance check on the HistGB Pmax baseline ranks the per-channel non-uniformity highest (`nu_cv`importance +5.47, `nu_p95p5` +3.81, above the geometry and PCA groups). TileSet-A additionally produces per-cell uncertainty (heteroscedastic σ), the abstention response (§6.2), a spatial attention map (§6.5), and the per-tile pathway used by the NB4 occlusion and forward scenarios; the baselines produce point estimates only. The two are read together: the baselines give an R² reference on a position-agnostic feature set, and TileSet-A adds uncertainty, abstention, and spatial structure.
 
 Both the baselines and TileSet-A rest on the same regenerated 37-feature generation (NB1c on UBELIX, NB2 re-run), so the comparison is on a single feature pipeline.
 
@@ -561,7 +584,7 @@ Physics constraints hold as soft penalties (test-set residuals): `|Pmax−Vmax·
 **6.0 %** (p95 6.7 %), `|Pmax−FF·Voc·Isc|/Pmax` **5.8 %** (p95 9.4 %),
 `|Vmax·Imax−FF·Voc·Isc|/Pmax` **2.0 %**. A direct-vs-derived audit supports predicting all seven as direct heads: re-deriving `Isc` as `Pmax/(FF·Voc)` gives R² = −6.75 (chained-ratio noise) against the direct head's 0.760. The lowest-R² target is Rs (R² = 0.598); it is the target the order-agnostic pooling resolves least well, and the motivation for the Tier-B and Tier-C directions (§5.1, §5.4).
 
-![](../figures/nb3_scatter_normed.png)
+![697](../figures/nb3_scatter_normed.png)
 
 Figure 6.1, true-vs-predicted parity per target
 
@@ -647,11 +670,9 @@ The card is an illustration across the envelope, not a quantitative result: the 
 
 Isc and the Isc-linked Pmax plateau at R² ≈ 0.76–0.78 on the full set, which indicates the luminescence images carry limited information about these current-related targets. The attention map has two components: it localises to low-emission (defective) regions (Spearman ρ between tile mean emission and attention weight is **−0.65 / −0.58 / −0.58** for EL_lo/EL_hi/PL_hi) and it has a border/perimeter component (border ρ =
 **+0.80**, grad(EL) ρ = +0.50); it is therefore used as a model diagnostic and as the appearance
-prior, not directly as a loss signal. Loss is not attributed to a region, IV is global and the cell symmetric (§1); the forward estimates (S1 deficit, S2/S3 re-prediction) are whole-cell and, for the simulation scenarios, semi-quantitative until the re-prediction loop is closed. Rs has the lowest R² (0.598; §5.4). Soft-constraint residuals are 5.8–6.0 % (§6.1). Single cohort; no external validation yet. The per-target R² varies run-to-run (each run is trained from scratch); reported numbers are tied to a named checkpoint.
+prior, not directly as a loss signal. Loss is not attributed to a region, IV is global and the cell symmetric (§1); the forward estimates are whole-cell; the S2/S3 re-prediction loop is closed and returns ΔIV ≈ 0 (§5.5), so S1 and the generative headroom are the forward estimates of record. Rs has the lowest R² (0.598; §5.4). Soft-constraint residuals are 5.8–6.0 % (§6.1). Single cohort; no external validation yet. The per-target R² varies run-to-run (each run is trained from scratch); reported numbers are tied to a named checkpoint.
 
-Two later-tier results are negative. **Tier-C** (NB6 ViT/MAE) was tried in four configurations (pixel and feature tokens; plain NLL, β-NLL, and β-NLL with per-target loss balancing and worst-target selection). The balanced configuration removes the σ collapse but yields uniformly weak fits (FF 0.14, Pmax 0.17, Rs 0.10), far below Tier-A on every target, a deeper cross-tile transformer adds no usable predictive power on this cohort, and Tier-A is the model of record.
-**The S2/S3 masked-edit scenarios** (NB5), evaluated with a faithful trained decoder and a
-cohort-wide occlusion table, re-predict to ΔIV ≈ 0: localized diffusion edits do not change the predicted IV. This is consistent with the non-identifiability premise (§1), local structure does not carry an identifiable global IV effect in either direction. The usable forward estimate is the whole-representation headroom (NB4 S1; NB5 generative headroom), not localized editing.
+Two later-tier results are negative and are reported in full where they arise: the Tier-C cross-tile transformer does not reach Tier-A on any target (§5.4), and the S2/S3 masked-edit scenarios re-predict to ΔIV ≈ 0 (§5.5), consistent with the non-identifiability premise (§1). Their consequence for the deliverable is stated once here: Tier-A remains the model of record, and the forward estimate of record is the whole-representation headroom (S1 and the generative headroom), not localized editing.
 
 ---
 
@@ -695,6 +716,7 @@ I like to acknowledge and thank the former R&D Team for Meyer Burger Research th
 
 ## Appendix
 
+
 ### Appendix E.3, synthesized channels
 
 The three engineered channels are computed by `lc.synthesize_channels` (single source of truth, used identically by the feature extraction and the PyTorch dataset), with ε = 1, `V_T = 0.02585 V`, `T_hi = 40 ms`, `T_lo = 600 ms`.
@@ -704,7 +726,6 @@ The three engineered channels are computed by `lc.synthesize_channels` (single s
 **EL/PL ratio (`log_el_pl`).** `log_el_pl = ln[(EL_hi + ε)/(PL_hi + ε)]`.
 
 **EL gradient (`grad_el_hi`).** `grad_el_hi = |∇ EL_hi| = hypot(∂ₓEL_hi, ∂_yEL_hi)`, sensitive to cracks and finger interruptions.
-
 
 
 
