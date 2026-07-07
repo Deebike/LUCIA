@@ -1,8 +1,9 @@
-# LUCIA, CAS AML Final Project
+# LUCIA, CAS Advanced Machine Learning Final Project
 
 **Luminescence Understanding, Classification, Impact, and Attribution**
 University of Bern, CAS Advanced Machine Learning (2025–2026)
 
+![](figures/LUCIA_ALEBRIJE_transparent_small.jpg)
 LUCIA is a computer-vision and machine-learning project on rear-contact silicon solar cells. It
 combines image registration, per-tile feature engineering, multi-output IV prediction with
 calibrated uncertainty, appearance-based defect localisation, and forward (whole-cell)
@@ -10,15 +11,11 @@ counterfactual performance analysis on luminescence imagery.
 
 ## Data availability and confidentiality
 
-> The cell imagery and the raw per-cell IV measurements are **proprietary and may be
-> confidential**. They are **not included in this repository**. No raw source images and no raw
-> tabular measurements are published here. Any image shown in the report is a redaction-stamped
-> sample, a generated synthetic stand-in, or a derived representation; the four raw
-> luminescence channels are never shown unstamped, and all IV values are normalized to their
-> maximum. Reuse or redistribution of the underlying data beyond this report
-> requires written authorization from the current rights holder or its successors. The notebooks
-> read data from a local path configured by the `LUCIA_ROOT` environment variable; with no data
-> present they run only up to the points that require it.
+The cell imagery and the raw per-cell IV measurements are **proprietary and may be
+ confidential**. They are **not included in this repository**. No raw source images and no raw
+ tabular measurements are published here. Any image shown in the report is a redaction-stamped sample, a generated synthetic stand-in, or a derived representation; the four raw
+ luminescence channels are never shown unstamped, and all IV values are normalized to their maximum. Reuse or redistribution of the underlying data beyond this report
+ requires written authorization from the current rights holder or its successors. The notebooks read data from a local path configured by the `LUCIA_ROOT` environment variable; with no data present they run only up to the points that require it.
 
 ## Overview
 
