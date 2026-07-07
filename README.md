@@ -1,9 +1,6 @@
 # LUCIA, CAS AML Final Project
 
-![LUCIA](https://github.com/Deebike/LUCIA/blob/main/figures/LUCIA_ALEBRIJE_transparent_small.jpg)
-
 **Luminescence Understanding, Classification, Impact, and Attribution**
-
 University of Bern, CAS Advanced Machine Learning (2025–2026)
 
 LUCIA is a computer-vision and machine-learning project on rear-contact silicon solar cells. It
@@ -15,9 +12,10 @@ counterfactual performance analysis on luminescence imagery.
 
 > The cell imagery and the raw per-cell IV measurements are **proprietary and may be
 > confidential**. They are **not included in this repository**. No raw source images and no raw
-> tabular measurements are published here. Any image shown in the report is a redacted-stamped
-> sample, a generated synthetic stand-in, or a derived representation; all IV values are
-> normalized to their maximum. Reuse or redistribution of the underlying data beyond this report
+> tabular measurements are published here. Any image shown in the report is a redaction-stamped
+> sample, a generated synthetic stand-in, or a derived representation; the four raw
+> luminescence channels are never shown unstamped, and all IV values are normalized to their
+> maximum. Reuse or redistribution of the underlying data beyond this report
 > requires written authorization from the current rights holder or its successors. The notebooks
 > read data from a local path configured by the `LUCIA_ROOT` environment variable; with no data
 > present they run only up to the points that require it.
@@ -54,9 +52,9 @@ NB7   per-cell report card (inference, abstention, S1/S2/S3 panels)
   Spearman ρ ≥ 0.95 on six of seven targets.
 - Defect maps, a six-class taxonomy (monotone in FF/Pmax), and a top-decile counterfactual give
   per-cell headroom (S1).
-- The cross-tile transformer (NB6) and the localised generative editing scenarios (NB5 S2/S3)
-  are reported as **negative results** on this cohort; the report states what was intended and
-  the future path for each.
+- The cross-tile transformer (NB6) and the localised generative editing scenarios (NB5 S2/S3,
+  re-predicting to ΔIV ≈ 0) are reported as **negative results** on this cohort; the report
+  states what was intended and the future path for each.
 
 ## Key techniques
 
@@ -73,7 +71,7 @@ NB7   per-cell report card (inference, abstention, S1/S2/S3 panels)
 ```
 ├── notebooks/        # NB1a .. NB7
 ├── code/             # lucia_common.py and shared helpers
-├── report/           # final report (PDF/Markdown)
+├── report/           # final report (PDF/Markdown) + edge_detection.md companion
 ├── figures/          # redacted / synthetic / derived figures only
 ├── requirements.txt  # or environment.yml
 ├── .gitignore        # excludes data/, models/*.pt, outputs/, *.npy/*.npz/*.h5
