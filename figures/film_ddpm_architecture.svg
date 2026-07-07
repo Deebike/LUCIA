@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" font-family="Helvetica,Arial,sans-serif">
+  <style>
+    .title{font-size:19px;font-weight:700;fill:#1a1a1a}
+    .sub{font-size:12px;fill:#555}
+    .lat{fill:#e9e4f2;stroke:#5c4b8a;stroke-width:1.5}
+    .noise{fill:#f6e8e8;stroke:#9a4b4b;stroke-width:1.4}
+    .unet{fill:#e7f0e9;stroke:#3c6b4c;stroke-width:1.5}
+    .film{fill:#fdf3dc;stroke:#a8842c;stroke-width:1.5}
+    .lbl{font-size:11.5px;fill:#20303f;text-anchor:middle}
+    .dim{font-size:10px;fill:#607080;text-anchor:middle}
+    .arr{stroke:#8895a5;stroke-width:1.6;fill:none;marker-end:url(#a)}
+    .arrO{stroke:#a8842c;stroke-width:1.6;fill:none;marker-end:url(#o);stroke-dasharray:5 3}
+    .note{font-size:11px;fill:#40506a}
+    .stage{font-size:12.5px;font-weight:700}
+  </style>
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#8895a5"/></marker>
+    <marker id="o" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#a8842c"/></marker>
+  </defs>
+
+  <text x="24" y="30" class="title">IV-conditioned latent diffusion (NB5): DDPM with FiLM conditioning</text>
+  <text x="24" y="48" class="sub">Forward: add noise stepwise to the Stage-1 latent. Reverse: a U-Net predicts the noise at each step, steered by the requested IV through FiLM.</text>
+
+  <!-- forward noising row -->
+  <text x="24" y="92" class="stage" fill="#9a4b4b">Forward (training only): cosine noise schedule, T = 1000</text>
+  <rect x="24" y="105" width="88" height="50" rx="5" class="lat"/>
+  <text x="68" y="126" class="lbl">latent z0</text><text x="68" y="141" class="dim">C_LAT x H5 x W5</text>
+  <rect x="150" y="105" width="88" height="50" rx="5" class="noise"/><text x="194" y="126" class="lbl">z_t</text><text x="194" y="141" class="dim">partly noised</text>
+  <rect x="276" y="105" width="88" height="50" rx="5" class="noise"/><text x="320" y="126" class="lbl">z_T</text><text x="320" y="141" class="dim">pure noise</text>
+  <path class="arr" d="M112,130 L148,130"/><path class="arr" d="M238,130 L274,130"/>
+  <text x="130" y="122" class="dim">+ noise</text><text x="256" y="122" class="dim">+ noise</text>
+
+  <!-- reverse row: U-Net -->
+  <text x="24" y="205" class="stage" fill="#3c6b4c">Reverse (training and sampling): U-Net denoiser predicts the added noise</text>
+  <!-- U-Net shape -->
+  <g>
+    <rect x="120" y="235" width="54" height="120" rx="4" class="unet"/><text x="147" y="300" class="lbl" transform="rotate(-90 147,300)">enc block</text>
+    <rect x="188" y="255" width="50" height="80" rx="4" class="unet"/><text x="213" y="299" class="lbl" transform="rotate(-90 213,299)">enc block</text>
+    <rect x="252" y="272" width="46" height="46" rx="4" class="unet"/><text x="275" y="299" class="lbl">mid</text>
+    <rect x="312" y="255" width="50" height="80" rx="4" class="unet"/><text x="337" y="299" class="lbl" transform="rotate(-90 337,299)">dec block</text>
+    <rect x="376" y="235" width="54" height="120" rx="4" class="unet"/><text x="403" y="300" class="lbl" transform="rotate(-90 403,300)">dec block</text>
+    <!-- skip connections -->
+    <path class="arr" d="M174,245 C260,205 300,205 376,245"/>
+    <path class="arr" d="M238,262 C265,240 300,240 312,262"/>
+    <text x="275" y="222" class="dim">skip connections</text>
+  </g>
+  <rect x="30" y="272" width="70" height="46" rx="5" class="noise"/><text x="65" y="292" class="lbl">z_t + t</text><text x="65" y="306" class="dim">noised latent</text>
+  <path class="arr" d="M100,295 L118,295"/>
+  <rect x="452" y="272" width="86" height="46" rx="5" class="unet"/><text x="495" y="292" class="lbl">predicted</text><text x="495" y="306" class="lbl">noise ε̂</text>
+  <path class="arr" d="M430,295 L450,295"/>
+
+  <!-- FiLM path -->
+  <text x="620" y="205" class="stage" fill="#a8842c">FiLM conditioning path</text>
+  <rect x="600" y="235" width="96" height="46" rx="5" class="film"/><text x="648" y="255" class="lbl">requested IV</text><text x="648" y="269" class="dim">7 targets</text>
+  <rect x="600" y="300" width="96" height="42" rx="5" class="film"/><text x="648" y="318" class="lbl">MLP</text><text x="648" y="332" class="dim">per U-Net block</text>
+  <rect x="600" y="360" width="96" height="46" rx="5" class="film"/><text x="648" y="379" class="lbl">scale γ, shift β</text><text x="648" y="394" class="dim">per channel</text>
+  <path class="arrO" d="M648,281 L648,298"/><path class="arrO" d="M648,342 L648,358"/>
+  <path class="arrO" d="M598,383 C520,400 430,370 403,357"/>
+  <path class="arrO" d="M598,375 C480,390 300,345 275,320"/>
+  <path class="arrO" d="M598,368 C440,378 230,340 213,337"/>
+  <text x="470" y="402" class="note">h → γ · h + β applied inside every block</text>
+
+  <!-- sampling notes -->
+  <text x="24" y="445" class="stage">Training and sampling</text>
+  <text x="24" y="465" class="note">Training: conditioning randomly dropped for 10 % of examples (classifier-free guidance). Loss: MSE between true and predicted noise.</text>
+  <text x="24" y="483" class="note">Sampling: DDIM, 50 steps; guidance weight cfg = 2.0 mixes the conditioned and unconditioned predictions to set how strongly the requested IV is enforced.</text>
+  <text x="24" y="501" class="note">Editing (S2/S3): masked inpainting keeps observed regions and re-generates only the masked tiles, conditioned on the target IV; the decoded image is re-predicted through Tier-A.</text>
+</svg>
